@@ -19,7 +19,14 @@ using namespace std;
 using namespace cv;
 using namespace cv::xfeatures2d;
 
-
+struct DataForMinimizer
+{
+	std::vector<cv::Point2f> points;
+	std::vector<cv::Vec3b> colors;
+	std::vector<bool> needTransforms;
+	int width;
+	int height;
+};
 
 class HomographyManager
 {	
@@ -38,6 +45,7 @@ public:
     cv::Mat getOptimalHomo();
 
     cv::Mat getInvertedH(){return m_H_inv;}
+    std::vector<cv::Mat> getHomoSet(){return m_homographySet;}
 private:
 	double ransac_thresh = 2.5f; // RANSAC inlier threshold
 	std::vector<cv::KeyPoint> m_matched1;

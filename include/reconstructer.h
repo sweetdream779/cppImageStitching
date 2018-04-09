@@ -7,9 +7,12 @@
 class Reconstructer
 {
 public:
-    Reconstructer(){ homoManager = HomographyManager();}
+    Reconstructer(){ 
+    	homoManager = HomographyManager();
+    	minimizer 	= GraphCutsMinimizer();
+    }
 
-    void reconstruct(std::vector < std::vector<cv::Point2f> > blobs, std::vector<cv::KeyPoint>& matched1, std::vector<cv::KeyPoint>& matched2);
+    void reconstruct(std::vector <DataForMinimizer> datas, std::vector<cv::KeyPoint>& matched1, std::vector<cv::KeyPoint>& matched2);
 
     
 protected:
