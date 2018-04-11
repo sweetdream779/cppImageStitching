@@ -19,7 +19,7 @@ void Reconstructer::reconstruct(cv::Mat& imTgt, cv::Mat& imSrc, cv::Size sizeSrc
 
 	//homos map target image to src, нужно найти координаты точек в которые бы отображалась наш блоб из таргет, а потом взять эти точки
 	homoManager.setTransformedTgtImgs(imTgt, sizeTgt);
-	homoManager.setTransformedSrcImgs(imTgt, sizeTgt);
+	homoManager.setTransformedSrcImgs(imSrc, sizeTgt);
 
 	std::vector<cv::Mat> homoSet = homoManager.getHomoSet();
 	std::vector<cv::Mat> invHomoSet = homoManager.getInvHomoSet();

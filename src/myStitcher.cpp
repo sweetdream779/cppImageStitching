@@ -134,7 +134,7 @@ cv::Mat MyStitcher::stitch(const cv::Mat& img2, const cv::Mat& img1,
 
     //stitch
     cv::Mat res;
-    cv::warpPerspective(image1, res, homoManager.getInvertedH(), cv::Size(image2.cols + image1.cols, image1.rows), cv::WARP_INVERSE_MAP);
+    cv::warpPerspective(image1, res, homoManager.getInvertedH(), cv::Size(image2.cols + image1.cols, image2.rows), cv::WARP_INVERSE_MAP);
     std::vector<cv::Point2f> pts_in;
     pts_in.resize(1);
     std::vector<cv::Point2f> pts_out;
