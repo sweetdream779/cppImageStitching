@@ -11,7 +11,7 @@ std::vector<cv::Point2f> Points(std::vector<cv::KeyPoint> matched){
 cv::Mat HomographyManager::findOneHomo(std::vector<KeyPoint>& inliers1, std::vector<KeyPoint>& inliers2, 
 									   std::vector<KeyPoint>& outliers1, std::vector<KeyPoint>& outliers2)
 {
-
+    //TODO speed up by replace KeyPoint => cv::Point2f 
     int matchesi = (int)m_matched1.size();
     std::cout<<std::endl<<"matchesi: "<<matchesi<<std::endl;
     Mat inlier_mask, homography;
@@ -62,26 +62,59 @@ cv::Mat HomographyManager::findMainHomo(int k)
 
 void HomographyManager::findSeveralHomo(const int num, std::vector<cv::KeyPoint> matched1, std::vector<cv::KeyPoint> matched2)
 {
-    m_homographySet.resize(num);
     setMatchedPoints(matched1, matched2);
     for(int i = 0; i < num; ++i)
     {
         std::vector<KeyPoint> inliers1, inliers2;
         std::vector<KeyPoint> outliers1, outliers2;
         cv::Mat homo = findOneHomo(inliers1, inliers2, outliers1, outliers2);
-
-        m_homographySet[i] = homo;
+        if(homo.empty())
+            continue;
+        m_homographySet.push_back(homo);
+        m_invHomographySet.push_back(m_H_inv);
 
         setMatchedPoints(outliers1, outliers2);
     }
 }
 
-void HomographyManager::removeWrongHomo()
+std::vector<cv::Point2f> HomographyManager::transformPoints(std::vector<cv::Point2f>& pts_in, cv::Mat& homo)
 {
-    //check if not save orintation
+    std::vector<cv::Point2f> pts_out(pts_in.size());
+    cv::perspectiveTransform(pts_in, pts_out, homo);
+    return pts_out;
 }
 
-cv::Mat HomographyManager::getOptimalHomo()
+//check if a homography not saves orientation
+void HomographyManager::removeWrongHomo()
 {
+    std::cout<<"Num of homography before wrongs deleting: "<<m_homographySet.size()<<std::endl;
+    
+    int i = 0;
+    while(i < m_homographySet.size())
+    {
+        std::vector<cv::Point2f> pts_src(2);
+        pts_src[0] = cv::Point2f(0,100);
+        pts_src[1] = cv::Point2f(100,200);
+        std::vector<cv::Point2f> pts_target = transformPoints(pts_src, m_homographySet[i]);
+        if(pts_target[0].x > pts_target[1].x || pts_target[0].y > pts_target[1].y)
+        {
+            m_homographySet.erase(m_homographySet.begin() + i);
+            m_invHomographySet.erase(m_invHomographySet.begin() + i);            
+        }
+        else
+            ++i;
+    }
 
+    std::cout<<"Num of homography after wrongs deleting: "<<m_homographySet.size()<<std::endl;
+
+}
+
+void HomographyManager::setTransformedImgs(cv::Mat& imTgt, cv::Size sizeSrc)
+{   
+    int num = m_homographySet.size();
+    m_transformedImgs.resize(num);
+    for(int i = 0; i < num; ++i)
+    {
+        cv::warpPerspective(imTgt, m_transformedImgs[i], m_invHomographySet[i], sizeSrc, cv::WARP_INVERSE_MAP);
+    }
 }

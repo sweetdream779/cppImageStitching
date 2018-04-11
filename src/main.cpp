@@ -36,7 +36,6 @@ void FindBlobs(const cv::Mat &img, std::vector <DataForMinimizer>& datas, int bo
             if(rect.x <= borderX && rect.x+rect.width >= borderX)
             {
                 std::vector <cv::Point2f> blob;
-                std::vector <cv::Vec3b> colors;
                 std::vector <bool> needTransforms;
                 DataForMinimizer data;
                 int numPix = 0;
@@ -45,8 +44,6 @@ void FindBlobs(const cv::Mat &img, std::vector <DataForMinimizer>& datas, int bo
                     int *row2 = (int*)label_image.ptr(i);
                     for(int j=rect.x; j < (rect.x+rect.width); j++) {
                         blob.push_back(cv::Point2f(j,i));
-                        cv::Vec3b color = img.at<cv::Vec3b>(cv::Point(j,i));
-                        colors.push_back(color);
 
                         if(row2[j] != label_count) {
                             needTransforms.push_back(false);
@@ -59,9 +56,7 @@ void FindBlobs(const cv::Mat &img, std::vector <DataForMinimizer>& datas, int bo
 
                 if(numPix > 10){
                     data.points = blob;
-                    data.colors = colors;
-                    data.width = rect.width;
-                    data.height = rect.height;
+                    data.rect = rect;
                     data.needTransforms = needTransforms;
 
                     datas.push_back(data);
@@ -80,6 +75,9 @@ int main(int argc, char **argv){
 
 	image1 = imread(argv[1], CV_LOAD_IMAGE_COLOR);
     image2 = imread(argv[2], CV_LOAD_IMAGE_COLOR); 
+
+    image1 = resizeImg(image1);
+    image2 = resizeImg(image2);
     
     //Ptr<KAZE> akaze = KAZE::create();
     //akaze->setThreshold(akaze_thresh);
@@ -121,16 +119,10 @@ int main(int argc, char **argv){
     Reconstructer reconstructer; 
     //pass first homo too
 
+    //remove blob
     if(data1.size() > 0 && data2.size() == 0)
     {
-    	//если на первом, то удалить блобы
-        reconstructer.reconstruct(data1, matched1, matched2);
-
-    }
-    if(data2.size() > 0 && data1.size() == 0)
-    {
-		//если на втором и не границе, то добавить блоб
-        reconstructer.reconstruct(data2, matched1, matched2);
+        reconstructer.reconstruct(image1, image2, cv::Size(image2.cols, image2.rows), data1, matched1, matched2);
     }
 
     namedWindow( "Result" , WINDOW_AUTOSIZE);

@@ -15,7 +15,7 @@ public:
     GraphCutsMinimizer(){}
     GraphCutsMinimizer (const GraphCutsMinimizer& m_) = default;
 
-    void optimize(DataForMinimizer data, std::vector<cv::Mat> homoSet);
+    void optimize(std::vector<cv::Mat> imsSrc, cv::Mat& imSrc, DataForMinimizer& data, std::vector<cv::Mat> homoSet, std::vector<cv::Mat> invHomoSet);
 
 protected:
 

@@ -81,8 +81,8 @@ void MyStitcher::visualize(cv::Mat& frame1, const std::vector<cv::KeyPoint> poin
 cv::Mat MyStitcher::stitch(const cv::Mat& img2, const cv::Mat& img1,
                            std::vector<cv::KeyPoint>& matched1, std::vector<cv::KeyPoint>& matched2, int& borderX)
 {
-	cv::Mat image1 = resizeImg(img1);
-    cv::Mat image2 = resizeImg(img2);
+    cv::Mat image1 = img1.clone();
+    cv::Mat image2 = img2.clone();
 
     //getDifferences(image1, image2);
 
