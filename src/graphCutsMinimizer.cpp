@@ -81,7 +81,7 @@ void GridGraph_DArraySArray(DataForMinimizer& d, int width, int height,
 
 		gc->setSmoothCost(&smoothFn,&toFn);
 		printf("\nBefore optimization energy is %lld",gc->compute_energy());
-		gc->swap(2);// run expansion for 2 iterations. For swap use gc->swap(num_iterations);
+		gc->expansion(2);// run expansion for 2 iterations. For swap use gc->swap(num_iterations);
 		printf("\nAfter optimization energy is %lld",gc->compute_energy());
 
 		for ( int  i = 0; i < num_pixels; i++ )
