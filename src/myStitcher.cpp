@@ -121,7 +121,8 @@ cv::Mat MyStitcher::stitch(const cv::Mat& img2, const cv::Mat& img1,
         Mat res;
         hconcat(image2, image1, res);
         visualize(imclone1, matched1, imclone2, matched2, cv::Scalar(255,255,0));
-        hconcat(imclone2, imclone1, vis);                 
+        hconcat(imclone2, imclone1, vis); 
+        std::cout<<"Stitching failed!"<<std::endl;                
         imshow( "Vis", vis );
         return res;
     }
@@ -159,7 +160,7 @@ cv::Mat MyStitcher::stitch(const cv::Mat& img2, const cv::Mat& img1,
     float newHeight = image2.rows;
 
     cv::Rect croppedroi(0,0,newWidth, newHeight);
-    res = res(croppedroi);
+    //res = res(croppedroi);
     
     return res;
 }

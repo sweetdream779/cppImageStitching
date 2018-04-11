@@ -35,9 +35,10 @@ public:
     HomographyManager(){}
     HomographyManager (const HomographyManager& h_) = default;
 
-    void setMatchedPoints(std::vector<cv::KeyPoint>& matched1,  std::vector<cv::KeyPoint>& matched2) 
+    void setMatchedPoints(std::vector<cv::KeyPoint> matched1,  std::vector<cv::KeyPoint> matched2) 
     	{m_matched1 = matched1; m_matched2 = matched2;}
-    void setTransformedImgs(cv::Mat& imSrc, cv::Size size);
+    void setTransformedTgtImgs(const cv::Mat& imTgt, cv::Size size);
+    void setTransformedSrcImgs(const cv::Mat& imSrc, cv::Size size);
 
     cv::Mat findOneHomo(std::vector<cv::KeyPoint>& inliers1,  std::vector<cv::KeyPoint>& inliers2, 
 						std::vector<cv::KeyPoint>& outliers1, std::vector<cv::KeyPoint>& outliers2);
@@ -50,7 +51,8 @@ public:
     cv::Mat getInvertedH(){return m_H_inv;}
     std::vector<cv::Mat> getHomoSet(){return m_homographySet;}
     std::vector<cv::Mat> getInvHomoSet(){return m_invHomographySet;}
-    std::vector<cv::Mat> getTransformedImgs(){return m_transformedImgs;}
+    std::vector<cv::Mat> getTransformedTgtImgs(){return m_transformedTgtImgs;}
+    std::vector<cv::Mat> getTransformedSrcImgs(){return m_transformedSrcImgs;}
 private:
 	double ransac_thresh = 2.5f; // RANSAC inlier threshold
 	std::vector<cv::KeyPoint> m_matched1;
@@ -60,7 +62,8 @@ private:
 
 	std::vector<cv::Mat>	  m_homographySet;
 	std::vector<cv::Mat>	  m_invHomographySet;
-	std::vector<cv::Mat>	  m_transformedImgs;
+	std::vector<cv::Mat>	  m_transformedTgtImgs;
+	std::vector<cv::Mat>	  m_transformedSrcImgs;
 };
 
 #endif // HOMOGRAPHYMANAGER

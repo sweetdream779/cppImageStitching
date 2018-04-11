@@ -104,6 +104,8 @@ int main(int argc, char **argv){
     MyStitcher stitcher(detector, matcher, extractor);
     res=stitcher.stitch(image1, image2, matched1, matched2, borderX2);
 
+    namedWindow( "Result" , WINDOW_AUTOSIZE);
+    imshow( "Result", res);
     //find connected components on ipm
     //std::vector < std::vector<cv::Point2f > > blobs1;
     std::vector <DataForMinimizer> data1;
@@ -122,11 +124,12 @@ int main(int argc, char **argv){
     //remove blob
     if(data1.size() > 0 && data2.size() == 0)
     {
-        reconstructer.reconstruct(image1, image2, cv::Size(image2.cols, image2.rows), data1, matched1, matched2);
+        reconstructer.reconstruct(image1, image2, cv::Size(image2.cols, image2.rows), cv::Size(image1.cols + image2.cols, image2.rows), 
+                                data1, matched1, matched2);
     }
-
-    namedWindow( "Result" , WINDOW_AUTOSIZE);
-    imshow( "Result", res);
+    cv::Mat rec;
+    hconcat(image1, image2, rec);                 
+    imshow( "Reconstructed", rec);
 
     waitKey(0);
     return 0;

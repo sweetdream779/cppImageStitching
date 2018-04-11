@@ -3,7 +3,7 @@
 std::vector<cv::Point2f> Points(std::vector<cv::KeyPoint> matched){
     std::vector<cv::Point2f> res;
     for(int i=0;i<matched.size();i++){
-        res.push_back(Point2f(matched[i].pt.x,matched[i].pt.y));
+        res.push_back(Point2f(matched[i].pt.x, matched[i].pt.y));
     } 
     return res;
 }
@@ -14,11 +14,12 @@ cv::Mat HomographyManager::findOneHomo(std::vector<KeyPoint>& inliers1, std::vec
     //TODO speed up by replace KeyPoint => cv::Point2f 
     int matchesi = (int)m_matched1.size();
     std::cout<<std::endl<<"matchesi: "<<matchesi<<std::endl;
-    Mat inlier_mask, homography;
+    Mat inlier_mask, homography, inlier_mask2;
     if(m_matched1.size() >= 4) {
         homography = findHomography(Points(m_matched1), Points(m_matched2),
                                     RANSAC, ransac_thresh, inlier_mask);
-        m_H_inv  = homography.inv();
+        m_H_inv  = findHomography(Points(m_matched2), Points(m_matched1),
+                                    RANSAC, ransac_thresh, inlier_mask2);
     }
     if(m_matched1.size() < 4 || homography.empty()) {
         return homography;
@@ -48,16 +49,15 @@ cv::Mat HomographyManager::findOneHomo(std::vector<KeyPoint>& inliers1, std::vec
     std::cout<<"Outliers: "<<outliers1.size()<<std::endl;
     double ratio = inliers * 1.0 / matchesi;
 
+    setMatchedPoints(outliers1, outliers2);
+
     return homography;
 }
 
 
 cv::Mat HomographyManager::findMainHomo(int k)
 {
-    for(int i = 0; i < k; ++i)
-    {
 
-    }
 }
 
 void HomographyManager::findSeveralHomo(const int num, std::vector<cv::KeyPoint> matched1, std::vector<cv::KeyPoint> matched2)
@@ -72,8 +72,6 @@ void HomographyManager::findSeveralHomo(const int num, std::vector<cv::KeyPoint>
             continue;
         m_homographySet.push_back(homo);
         m_invHomographySet.push_back(m_H_inv);
-
-        setMatchedPoints(outliers1, outliers2);
     }
 }
 
@@ -109,12 +107,26 @@ void HomographyManager::removeWrongHomo()
 
 }
 
-void HomographyManager::setTransformedImgs(cv::Mat& imTgt, cv::Size sizeSrc)
-{   
+void HomographyManager::setTransformedSrcImgs(const cv::Mat& imSrc, cv::Size size)
+{
     int num = m_homographySet.size();
-    m_transformedImgs.resize(num);
+    m_transformedSrcImgs.resize(num);
     for(int i = 0; i < num; ++i)
     {
-        cv::warpPerspective(imTgt, m_transformedImgs[i], m_invHomographySet[i], sizeSrc, cv::WARP_INVERSE_MAP);
+        cv::warpPerspective(imSrc, m_transformedSrcImgs[i], m_invHomographySet[i], size);
+        cv::imshow("src", m_transformedSrcImgs[i]);
+        cv::waitKey(0); 
+    }
+}
+
+void HomographyManager::setTransformedTgtImgs(const cv::Mat& imTgt, cv::Size size)
+{   
+    int num = m_homographySet.size();
+    m_transformedTgtImgs.resize(num);
+    for(int i = 0; i < num; ++i)
+    {
+        cv::warpPerspective(imTgt, m_transformedTgtImgs[i], m_homographySet[i], size);
+        cv::imshow("tg", m_transformedTgtImgs[i]);
+        cv::waitKey(0);
     }
 }
