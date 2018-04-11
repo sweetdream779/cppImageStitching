@@ -107,13 +107,13 @@ void HomographyManager::removeWrongHomo()
 
 }
 
-void HomographyManager::setTransformedSrcImgs(const cv::Mat& imSrc, cv::Size size)
+void HomographyManager::setTransformedSrcImgs(const cv::Mat imSrc, cv::Size size)
 {
     int num = m_homographySet.size();
     m_transformedSrcImgs.resize(num);
     for(int i = 0; i < num; ++i)
     {
-        cv::warpPerspective(imSrc, m_transformedSrcImgs[i], m_invHomographySet[i], size);
+        cv::warpPerspective(imSrc, m_transformedSrcImgs[i], m_homographySet[i], size);
         cv::imshow("src", m_transformedSrcImgs[i]);
         cv::waitKey(0); 
     }

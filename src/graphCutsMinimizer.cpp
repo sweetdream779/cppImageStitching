@@ -10,25 +10,25 @@ float euclidNorm(cv::Vec3b& color1, cv::Vec3b& color2)
 	return std::sqrt(dr*dr + dg*dg + db*db);
 }
 
-void getVtVs(cv::Point2f& pt, cv::Mat& homo, cv::Mat& imTgt, cv::Mat& imScr, cv::Vec3b& Vt, cv::Vec3b& Vs)
+void getVtVs(const cv::Point2f& pt, const cv::Mat& homo, const cv::Mat& imTgt, const cv::Mat& imScr, cv::Vec3b& Vt, cv::Vec3b& Vs)
 {
-	std::vector<cv::Point2f> pts_in(1);
+	/*std::vector<cv::Point2f> pts_in(1);
     pts_in[0] = pt;
     std::vector<cv::Point2f> pts_out(1);
-    cv::perspectiveTransform(pts_in, pts_out, homo);
+    cv::perspectiveTransform(pts_in, pts_out, homo);*/
 
-    Vt = imTgt.at<cv::Vec3b>(cv::Point(pts_out[0].x, pts_out[0].y));
-    Vs = imScr.at<cv::Vec3b>(cv::Point(pts_out[0].x, pts_out[0].y));
+    Vt = imTgt.at<cv::Vec3b>(cv::Point(pt.x, pt.y));
+    Vs = imScr.at<cv::Vec3b>(cv::Point(pt.x, pt.y));
 }
 
-void getVt(cv::Point2f& pt, cv::Mat& homo, cv::Mat& imTgt, cv::Vec3b& Vt)
+void getVs(const cv::Point2f& pt, const cv::Mat& homo, const cv::Mat& imSrc, cv::Vec3b& Vs)
 {
-	std::vector<cv::Point2f> pts_in(1);
+	/*std::vector<cv::Point2f> pts_in(1);
     pts_in[0] = pt;
     std::vector<cv::Point2f> pts_out(1);
-    cv::perspectiveTransform(pts_in, pts_out, homo);
+    cv::perspectiveTransform(pts_in, pts_out, homo);*/
 
-    Vt = imTgt.at<cv::Vec3b>(cv::Point(pts_out[0].x, pts_out[0].y));
+    Vs = imSrc.at<cv::Vec3b>(cv::Point(pt.x, pt.y));
 }
 
 int smoothFn(int p1, int p2, int l1, int l2)
@@ -54,8 +54,8 @@ void GridGraph_DArraySArray(DataForMinimizer& d, int width, int height,
 	for ( int i = 0; i < num_pixels; i++ )
 		for (int l = 0; l < num_labels; l++ )
 		{
-			cv::Vec3b Vt = d.colorsTgt[l][i];
-			cv::Vec3b Vs = d.colorsSrc[i];
+			cv::Vec3b Vt = d.colorsTgt[i];
+			cv::Vec3b Vs = d.colorsSrc[l][i];
 
 			data[i*num_labels+l] = euclidNorm(Vt, Vs);
 		}
@@ -82,7 +82,7 @@ void GridGraph_DArraySArray(DataForMinimizer& d, int width, int height,
 
 }
 
-void GraphCutsMinimizer::optimize(std::vector<cv::Mat>& imsTgt, cv::Mat& imSrc, DataForMinimizer& data, std::vector<cv::Mat>& homoSet)
+void GraphCutsMinimizer::optimize(std::vector<cv::Mat>& imsSrc, cv::Mat& imTgt, DataForMinimizer& data, std::vector<cv::Mat>& homoSet)
 {
 	int width = data.rect.width;
 	int height = data.rect.height;
@@ -90,24 +90,24 @@ void GraphCutsMinimizer::optimize(std::vector<cv::Mat>& imsTgt, cv::Mat& imSrc, 
 
 	int num_labels = homoSet.size();
 
-	data.colorsSrc.resize(num_pixels);
-	data.colorsTgt.resize(num_labels);
+	data.colorsTgt.resize(num_pixels);
+	data.colorsSrc.resize(num_labels);
 	for(int l = 0; l< num_labels; ++l)
-		data.colorsTgt[l].resize(num_pixels);
+		data.colorsSrc[l].resize(num_pixels);
 
 	for(int i = 0; i < num_pixels; ++i){
 		for(int l = 0; l < num_labels; ++l)
 		{
 			if(!data.needTransforms[i])
 			{
-				data.colorsTgt[l][i] = Vec3b(0,0,0);
+				data.colorsSrc[l][i] = Vec3b(0,0,0);
 				if(l == 0)
-					data.colorsSrc[i] = Vec3b(0,0,0);
+					data.colorsTgt[i] = Vec3b(0,0,0);
 			}
 			else if(l == 0)
-				getVtVs(data.points[i], homoSet[l], imsTgt[l], imSrc, data.colorsTgt[l][i], data.colorsSrc[i]);
+				getVtVs(data.points[i], homoSet[l], imTgt, imsSrc[l],  data.colorsTgt[i], data.colorsSrc[l][i]);
 			else
-				getVt(data.points[i], homoSet[l], imsTgt[l], data.colorsTgt[l][i]);
+				getVs(data.points[i], homoSet[l], imsSrc[l], data.colorsSrc[l][i]);
 		}
 	}
 

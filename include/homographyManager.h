@@ -22,8 +22,8 @@ using namespace cv::xfeatures2d;
 struct DataForMinimizer
 {
 	std::vector<cv::Point2f> points;
-	std::vector<cv::Vec3b> colorsSrc;
-	std::vector<std::vector<cv::Vec3b> > colorsTgt;
+	std::vector<cv::Vec3b> colorsTgt;
+	std::vector<std::vector<cv::Vec3b> > colorsSrc;
 	std::vector<bool> needTransforms;
 	std::vector<int> homoIdxs;
 	cv::Rect rect;
@@ -38,7 +38,7 @@ public:
     void setMatchedPoints(std::vector<cv::KeyPoint> matched1,  std::vector<cv::KeyPoint> matched2) 
     	{m_matched1 = matched1; m_matched2 = matched2;}
     void setTransformedTgtImgs(const cv::Mat& imTgt, cv::Size size);
-    void setTransformedSrcImgs(const cv::Mat& imSrc, cv::Size size);
+    void setTransformedSrcImgs(const cv::Mat imSrc, cv::Size size);
 
     cv::Mat findOneHomo(std::vector<cv::KeyPoint>& inliers1,  std::vector<cv::KeyPoint>& inliers2, 
 						std::vector<cv::KeyPoint>& outliers1, std::vector<cv::KeyPoint>& outliers2);

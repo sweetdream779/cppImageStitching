@@ -78,7 +78,7 @@ int main(int argc, char **argv){
 
     image1 = resizeImg(image1);
     image2 = resizeImg(image2);
-    
+
     //Ptr<KAZE> akaze = KAZE::create();
     //akaze->setThreshold(akaze_thresh);
 
@@ -91,8 +91,8 @@ int main(int argc, char **argv){
     Ptr<BriefDescriptorExtractor> extractor = BriefDescriptorExtractor::create();
     Ptr<DescriptorMatcher> matcher = DescriptorMatcher::create("BruteForce-Hamming");
     
-    cv::Mat seg1 = cv::imread("/home/irina/Desktop/im1_seg.png", 0);
-    cv::Mat seg2 = cv::imread("/home/irina/Desktop/im3_seg.png", 0);
+    cv::Mat seg1 = cv::imread("/home/irina/Desktop/mask1.png", 0);
+    cv::Mat seg2 = cv::imread("/home/irina/Desktop/mask2.png", 0);
 
     seg1 = resizeImg(seg1);
     seg2 = resizeImg(seg2);

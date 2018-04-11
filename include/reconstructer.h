@@ -12,14 +12,14 @@ public:
     	minimizer 	= GraphCutsMinimizer();
     }
 
-    void reconstruct(cv::Mat& imTgt, cv::Mat& imSrc, cv::Size size, cv::Size size2, std::vector <DataForMinimizer>& datas, std::vector<cv::KeyPoint>& matched1, std::vector<cv::KeyPoint>& matched2);
+    void reconstruct(cv::Mat imTgt, cv::Mat imSrc, cv::Size size, cv::Size size2, std::vector <DataForMinimizer>& datas, std::vector<cv::KeyPoint>& matched1, std::vector<cv::KeyPoint>& matched2);
 
     
 protected:
     HomographyManager homoManager;
     GraphCutsMinimizer minimizer;
 
-    int m_homoNum = 1;
+    int m_homoNum = 2;
 
 };
 #endif // RECONSTRUCTER
