@@ -1,5 +1,8 @@
 #include "graphCutsMinimizer.h"
 
+struct ForSmoothFn{
+	DataForMinimizer *data;
+};
 
 float euclidNorm(cv::Vec3b& color1, cv::Vec3b& color2)
 {
@@ -31,15 +34,24 @@ void getVs(const cv::Point2f& pt, const cv::Mat& homo, const cv::Mat& imSrc, cv:
     Vs = imSrc.at<cv::Vec3b>(cv::Point(pt.x, pt.y));
 }
 
-int smoothFn(int p1, int p2, int l1, int l2)
+int smoothFn(int p, int q, int l1, int l2, void *exData)
 {
-	return(1);
-}
+	ForSmoothFn *myData = (ForSmoothFn *) exData;
+	DataForMinimizer* d = myData->data;
 
-double smoothFn2(int p1, int p2, int l1, int l2)
-{
-	if ( (l1-l2)*(l1-l2) <= 4 ) return((l1-l2)*(l1-l2));
-	else return(4);
+	cv::Vec3b Vs_p1 = d->colorsSrc[l1][p];
+	cv::Vec3b Vs_p2 = d->colorsSrc[l2][p];
+
+	cv::Vec3b Vs_q1 = d->colorsSrc[l1][q];
+	cv::Vec3b Vs_q2 = d->colorsSrc[l2][q];
+
+	if(!d->needTransforms[p] || !d->needTransforms[q])
+		return 0;
+
+	else
+		return 10*(euclidNorm(Vs_p1, Vs_p2) + euclidNorm(Vs_q1, Vs_q2));
+
+	//return 1;
 }
 
 
@@ -64,9 +76,12 @@ void GridGraph_DArraySArray(DataForMinimizer& d, int width, int height,
 		GCoptimizationGridGraph *gc = new GCoptimizationGridGraph(width, height, num_labels);
 		gc->setDataCost(data);
 		//gc->setSmoothCost(smooth);
-		gc->setSmoothCost(&smoothFn);
+		ForSmoothFn toFn;
+		toFn.data = &d;
+
+		gc->setSmoothCost(&smoothFn,&toFn);
 		printf("\nBefore optimization energy is %lld",gc->compute_energy());
-		gc->expansion(2);// run expansion for 2 iterations. For swap use gc->swap(num_iterations);
+		gc->swap(2);// run expansion for 2 iterations. For swap use gc->swap(num_iterations);
 		printf("\nAfter optimization energy is %lld",gc->compute_energy());
 
 		for ( int  i = 0; i < num_pixels; i++ )

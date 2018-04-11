@@ -57,7 +57,7 @@ cv::Mat HomographyManager::findOneHomo(std::vector<KeyPoint>& inliers1, std::vec
 
 cv::Mat HomographyManager::findMainHomo(int k)
 {
-
+    //several homos, choose one by minimum differensec in color on border
 }
 
 void HomographyManager::findSeveralHomo(const int num, std::vector<cv::KeyPoint> matched1, std::vector<cv::KeyPoint> matched2)
