@@ -19,7 +19,7 @@ protected:
     HomographyManager homoManager;
     GraphCutsMinimizer minimizer;
 
-    int m_homoNum = 3;
+    int m_homoNum = 1;
 
 };
 #endif // RECONSTRUCTER

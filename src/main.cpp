@@ -127,9 +127,9 @@ int main(int argc, char **argv){
         reconstructer.reconstruct(image1, image2, cv::Size(image2.cols, image2.rows), cv::Size(image1.cols + image2.cols, image2.rows), 
                                 data1, matched1, matched2);
     }
-    cv::Mat rec;
-    hconcat(image1, image2, rec);                 
-    imshow( "Reconstructed", rec);
+    //cv::Mat rec;
+    //hconcat(image1, image2, rec);                 
+    //imshow( "Reconstructed", rec);
 
     waitKey(0);
     return 0;
