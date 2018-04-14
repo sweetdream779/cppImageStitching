@@ -27,6 +27,7 @@ struct DataForMinimizer
 	std::vector<bool> needTransforms;
 	std::vector<int> homoIdxs;
 	cv::Rect rect;
+	std::vector<cv::Point2f> maskPoints;
 };
 
 class HomographyManager

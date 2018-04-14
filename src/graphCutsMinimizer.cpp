@@ -45,10 +45,10 @@ int smoothFn(int p, int q, int l1, int l2, void *exData)
 	cv::Vec3b Vs_q1 = d->colorsSrc[l1][q];
 	cv::Vec3b Vs_q2 = d->colorsSrc[l2][q];
 
-	if(!d->needTransforms[p] || !d->needTransforms[q])
-		return 0;
+	//if(!d->needTransforms[p] || !d->needTransforms[q])
+	//	return 0;
 
-	else
+	//else
 		return 10*(euclidNorm(Vs_p1, Vs_p2) + euclidNorm(Vs_q1, Vs_q2));
 
 	//return 1;
@@ -81,8 +81,8 @@ void GridGraph_DArraySArray(DataForMinimizer& d, int width, int height,
 
 		gc->setSmoothCost(&smoothFn,&toFn);
 		printf("\nBefore optimization energy is %lld",gc->compute_energy());
-		gc->expansion(2);// run expansion for 2 iterations. For swap use gc->swap(num_iterations);
-		printf("\nAfter optimization energy is %lld",gc->compute_energy());
+		gc->swap(2);// run expansion for 2 iterations. For swap use gc->swap(num_iterations);
+		printf("\nAfter optimization energy is %lld \n",gc->compute_energy());
 
 		for ( int  i = 0; i < num_pixels; i++ )
 			result[i] = gc->whatLabel(i);
@@ -113,13 +113,13 @@ void GraphCutsMinimizer::optimize(std::vector<cv::Mat>& imsSrc, cv::Mat& imTgt, 
 	for(int i = 0; i < num_pixels; ++i){
 		for(int l = 0; l < num_labels; ++l)
 		{
-			if(!data.needTransforms[i])
+			/*if(!data.needTransforms[i])
 			{
 				data.colorsSrc[l][i] = Vec3b(0,0,0);
 				if(l == 0)
 					data.colorsTgt[i] = Vec3b(0,0,0);
-			}
-			else if(l == 0)
+			}*/
+			if(l == 0)
 				getVtVs(data.points[i], homoSet[l], imTgt, imsSrc[l],  data.colorsTgt[i], data.colorsSrc[l][i]);
 			else
 				getVs(data.points[i], homoSet[l], imsSrc[l], data.colorsSrc[l][i]);
@@ -129,8 +129,8 @@ void GraphCutsMinimizer::optimize(std::vector<cv::Mat>& imsSrc, cv::Mat& imTgt, 
 	// smoothness and data costs are set up using arrays
 	GridGraph_DArraySArray(data, width, height, num_pixels, num_labels, data.homoIdxs);
 
-	std::cout<<"\nResult indexes: ";
+	/*std::cout<<"\nResult indexes: ";
 	for(auto id: data.homoIdxs)
 		std::cout<<id<<" ";
-	std::cout<<"\n";
+	std::cout<<"\n";*/
 }
