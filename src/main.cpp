@@ -1,11 +1,6 @@
 #include "myStitcher.h"
 #include "reconstructer.h"
 
-cv::Mat getSegmentation(const cv::Mat& src){
-    cv::Mat seg = cv::imread("/home/irina/Desktop/im3_seg.png", 0);
-    return seg;
-}
-
 std::vector<cv::Point2f> findPointsOnBoundary(cv::Mat& img, const cv::Rect& r, const cv::Mat& src)
 {
     cv::Mat binary;
@@ -32,8 +27,8 @@ std::vector<cv::Point2f> findPointsOnBoundary(cv::Mat& img, const cv::Rect& r, c
                         if(row2[j] != label_count) {
                             continue;
                         }
-                        if(j + r.x < src.cols && i + r.y < src.rows)
-                            points.push_back(cv::Point2f(j + r.x , i + r.y));
+                        if(j + r.x -3 < src.cols && i + r.y -3 < src.rows)
+                            points.push_back(cv::Point2f(j + r.x - 3 , i + r.y - 3));
                     }
             }              
 
@@ -53,11 +48,11 @@ std::vector<cv::Point2f> getBoundary(const cv::Mat& croppedimg, const cv::Rect& 
 
     cv::Mat cropped_gray = croppedimg.clone();
     cv::Mat new_cropped_gray = Mat::zeros( cv::Size(cropped_gray.cols + 6, cropped_gray.rows + 6), CV_8UC1 );
-    cv::Mat roi1(new_cropped_gray, Rect(2, 2,  cropped_gray.cols, cropped_gray.rows));
+    cv::Mat roi1(new_cropped_gray, Rect(3, 3,  cropped_gray.cols, cropped_gray.rows));
     cropped_gray.copyTo(roi1);
 
     //erode cropped image
-    int erosion_size = 1;
+    int erosion_size = boundsize-2;
     cv::Mat element = getStructuringElement( cv::MORPH_RECT,
                                        Size( 2*erosion_size + 1, 2*erosion_size+1 ),
                                        Point( erosion_size, erosion_size ) );
@@ -81,7 +76,7 @@ std::vector<cv::Point2f> getBoundary(const cv::Mat& croppedimg, const cv::Rect& 
     return points;
 }
 
-void FindBlobs(const cv::Mat &img, std::vector <DataForMinimizer>& datas, int borderX)
+int FindBlobs(const cv::Mat &img, std::vector <DataForMinimizer>& datas, int borderX, bool use_gdf, bool rigth_im = false)
 {
     datas.clear();
     cv::Mat binary;
@@ -96,7 +91,7 @@ void FindBlobs(const cv::Mat &img, std::vector <DataForMinimizer>& datas, int bo
     binary.convertTo(label_image, CV_32SC1);
 
     int label_count = 2; // starts at 2 because 0,1 are used already
-
+    int onBorder = 0;
     for(int y=0; y < label_image.rows; y++) {
         int *row = (int*)label_image.ptr(y);
         for(int x=0; x < label_image.cols; x++) {
@@ -106,50 +101,72 @@ void FindBlobs(const cv::Mat &img, std::vector <DataForMinimizer>& datas, int bo
 
             cv::Rect rect;
             cv::floodFill(label_image, cv::Point(x,y), label_count, &rect, 0, 0, 4);
-            std::cout<<rect.x<<" "<<rect.x+rect.width<<std::endl;
+            DataForMinimizer data;
+            data.onBorder = false;
             if(rect.x <= borderX && rect.x+rect.width >= borderX)
             {
-                std::vector <cv::Point2f> blob;                
-                //std::vector <cv::Point2f> maskPoints;
+                std::vector <cv::Point2f> blob;         
 
                 std::vector <bool> needTransforms;
-                DataForMinimizer data;
                 int numPix = 0;
 
                 for(int i=rect.y; i < (rect.y+rect.height); i++) {
                     int *row2 = (int*)label_image.ptr(i);
                     for(int j=rect.x; j < (rect.x+rect.width); j++) {
-                        blob.push_back(cv::Point2f(j,i));
 
-                        if(row2[j] != label_count) {
-                            needTransforms.push_back(false);
-                            //maskPoints.push_back(cv::Point2f(j,i));
-                            continue;
+                        if(rigth_im && j < borderX)
+                        {
+                            if(row2[j] != label_count)
+                                continue;
+                            //store point for right frame
+                            blob.push_back(cv::Point2f(j,i));
+                            numPix++;
                         }
-                        needTransforms.push_back(true);
-                        numPix++;
+                        else
+                        {
+                            //store point for left frame
+                            blob.push_back(cv::Point2f(j,i));
+
+                            if(row2[j] != label_count) {
+                                needTransforms.push_back(false);
+                                continue;
+                            }
+                            needTransforms.push_back(true);
+                            numPix++;
+                        }
                     }
                 }
 
-                if(numPix > 10){
+                if(numPix > 15){
                     data.points = blob;
-                    data.rect = rect;
                     data.needTransforms = needTransforms;
-                    //data.maskPoints = maskPoints;
-                    std::cout<<"rect y, x : "<<rect.y+rect.height<<" "<<rect.x+rect.width/2<<std::endl;
-                    cv::Mat croppedimg = img(rect);
-                    data.maskPoints = getBoundary(croppedimg, rect, img);
-                    //data.rect = cv::boundingRect(data.maskPoints);
+                    if(use_gdf && rigth_im == false)
+                    {
+                        //additional data for gradient domain fusion
+                        cv::Mat croppedimg = img(rect);
+                        data.maskPoints = getBoundary(croppedimg, rect, img);
+                    }
+                    data.onBorder = true;
+                    onBorder++;
+                    data.rect = rect;
                     datas.push_back(data);
                 }
+            }
+            if(rect.width > 5 && rect.height > 5 && !data.onBorder)
+            {
+                data.rect = rect;
+                datas.push_back(data);
             }
 
             label_count++;
         }
     }
+    return onBorder;
 }
 
 int main(int argc, char **argv){
+    bool use_gdf = true; //use gradient domain fusion in reconstruction or not
+
     Mat image1,image2,res,vis;
 
 	image1 = imread(argv[1], CV_LOAD_IMAGE_COLOR);
@@ -189,34 +206,40 @@ int main(int argc, char **argv){
     int borderX2;
     std::vector<cv::KeyPoint> matched1, matched2;
     MyStitcher stitcher(detector, matcher, extractor);
-    res=stitcher.stitch(image1, image2, matched1, matched2, borderX2);
-
-    namedWindow( "Result" , WINDOW_AUTOSIZE);
-    imshow( "Result", res);
+    res = stitcher.stitch(image1, image2, matched1, matched2, borderX2);
+    cv::Mat homo = stitcher.getMainHomo();
+    if(homo.empty())
+    {
+        std::cout<<"Stitching failed"<<std::endl;
+        return 0;
+    }
     //find connected components on ipm
-    //std::vector < std::vector<cv::Point2f > > blobs1;
     std::vector <DataForMinimizer> data1;
-    FindBlobs(seg1, data1, borderX1);
-    std::cout<<"Blobs on joint from image1: "<<data1.size()<<std::endl;
+    int onBorder1 = FindBlobs(seg1, data1, borderX1, use_gdf, false);
+    std::cout<<"Blobs on joint from image1: "<<onBorder1<<" ,all: "<< data1.size()<<std::endl;
 
-
-    //std::vector < std::vector<cv::Point2f> > blobs2;
     std::vector <DataForMinimizer> data2;
-    FindBlobs(seg2, data2, borderX2);
-    std::cout<<"Blobs on joint from image2: "<<data2.size()<<std::endl;
+    int onBorder2 = FindBlobs(seg2, data2, borderX2, false, true);
+    std::cout<<"Blobs on joint from image2: "<<onBorder2<<" ,all: "<<data2.size()<<std::endl;
 
-    Reconstructer reconstructer; 
-    //pass first homo too
+    int homoNum = 2;
+    Reconstructer reconstructer(use_gdf, homoNum); 
 
     //remove blob
-    if(data1.size() > 0 /*&& data2.size() == 0*/)
+    if(onBorder1 > 0 && onBorder2 == 0)
     {
-        reconstructer.reconstruct(image1, image2, cv::Size(image2.cols, image2.rows), cv::Size(image1.cols + image2.cols, image2.rows), 
-                                data1, matched1, matched2);
+        std::cout<<"First reconstruction"<<std::endl;
+        image1 = reconstructer.reconstructWithRemoval(image1, image2, cv::Size(image1.cols + image2.cols, image2.rows), 
+                                                      data1, data2, matched1, matched2);
+
     }
-    //cv::Mat rec;
-    //hconcat(image1, image2, rec);                 
-    //imshow( "Reconstructed", rec);
+    if(onBorder2 > 0 && onBorder1 == 0)
+    {
+        std::cout<<"Second reconstruction"<<std::endl;
+        image1 = reconstructer.reconstructWithAdding(homo, data2, data1, image1, image2, res);
+    }
+    res = stitcher.fill_and_crop(res, image1, image2);           
+    cv::imshow( "Reconstructed", res);
 
     waitKey(0);
     return 0;

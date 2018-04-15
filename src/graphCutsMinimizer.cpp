@@ -45,13 +45,8 @@ int smoothFn(int p, int q, int l1, int l2, void *exData)
 	cv::Vec3b Vs_q1 = d->colorsSrc[l1][q];
 	cv::Vec3b Vs_q2 = d->colorsSrc[l2][q];
 
-	//if(!d->needTransforms[p] || !d->needTransforms[q])
-	//	return 0;
 
-	//else
-		return 10*(euclidNorm(Vs_p1, Vs_p2) + euclidNorm(Vs_q1, Vs_q2));
-
-	//return 1;
+	return 10*(euclidNorm(Vs_p1, Vs_p2) + euclidNorm(Vs_q1, Vs_q2));
 }
 
 
@@ -63,6 +58,7 @@ void GridGraph_DArraySArray(DataForMinimizer& d, int width, int height,
 
 	// first set up the array for data costs
 	int *data = new int[num_pixels*num_labels];
+	std::vector<int> counts(num_labels,0);
 	for ( int i = 0; i < num_pixels; i++ )
 		for (int l = 0; l < num_labels; l++ )
 		{
@@ -85,7 +81,23 @@ void GridGraph_DArraySArray(DataForMinimizer& d, int width, int height,
 		printf("\nAfter optimization energy is %lld \n",gc->compute_energy());
 
 		for ( int  i = 0; i < num_pixels; i++ )
-			result[i] = gc->whatLabel(i);
+		{
+			int label = gc->whatLabel(i);
+			result[i] = label;
+			counts[label]++;
+		}
+
+		int maxVal = 0;
+		int maxLabel = 0;
+		for(int i = 0; i < num_labels; ++i)
+		{
+			if(counts[i] > maxVal)
+			{
+				maxVal = counts[i];
+				maxLabel = i;
+			}
+		}
+		d.mainHomo = maxLabel;
 
 		delete gc;
 	}

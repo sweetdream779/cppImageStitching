@@ -28,6 +28,8 @@ struct DataForMinimizer
 	std::vector<int> homoIdxs;
 	cv::Rect rect;
 	std::vector<cv::Point2f> maskPoints;
+	int mainHomo;
+	bool onBorder;
 };
 
 class HomographyManager
@@ -47,9 +49,10 @@ public:
     void    findSeveralHomo(const int num, std::vector<cv::KeyPoint> matched1, std::vector<cv::KeyPoint> matched2);
     void	removeWrongHomo();
 
-    std::vector<cv::Point2f> transformPoints(std::vector<cv::Point2f>& pts_in, cv::Mat& homo);
+    std::vector<std::vector<cv::Vec4f> > getSrcRects(std::vector<DataForMinimizer> datasSrc);
 
-    cv::Mat getInvertedH(){return m_H_inv;}
+    std::vector<cv::Point2f> transformPoints(std::vector<cv::Point2f>& pts_in, cv::Mat& homo);
+    cv::Mat 			 getInvertedH(){return m_H_inv;}
     std::vector<cv::Mat> getHomoSet(){return m_homographySet;}
     std::vector<cv::Mat> getInvHomoSet(){return m_invHomographySet;}
     std::vector<cv::Mat> getTransformedTgtImgs(){return m_transformedTgtImgs;}

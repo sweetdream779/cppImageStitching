@@ -1,12 +1,7 @@
 #include "reconstructer.h"
 
-cv::Vec3b getColor(const cv::Mat& imSrc, const cv::Point2f& pt, cv::Mat homo)
+cv::Vec3b getColor(const cv::Mat& imSrc, const cv::Point2f& pt)
 {
-	/*std::vector<cv::Point2f> pts_in(1);
-    pts_in[0] = pt;
-    std::vector<cv::Point2f> pts_out(1);
-    cv::perspectiveTransform(pts_in, pts_out, homo);*/
-
 	return imSrc.at<cv::Vec3b>(cv::Point(pt.x, pt.y));
 }
 
@@ -146,51 +141,198 @@ void gradientDomainFusion(std::vector<cv::Point2f>& maskPoints, cv::Mat& m, cv::
 
 }
 
-void Reconstructer::reconstruct(cv::Mat imTgt, cv::Mat imSrc, cv::Size sizeSrc, cv::Size sizeTgt, std::vector <DataForMinimizer>& datas, 
-								std::vector<cv::KeyPoint>& matched1, std::vector<cv::KeyPoint>& matched2)
+/*cv::Mat Reconstructer::reconstructWithRemoval(cv::Mat imTgt, cv::Mat imSrc, cv::Size sizeTgt, 
+											  std::vector <DataForMinimizer>& datas, std::vector <DataForMinimizer>& datasSrc,
+											  std::vector<cv::KeyPoint>& matched1, std::vector<cv::KeyPoint>& matched2)
 {
-	//src to tgt
+	//find several homographies which map source image to target coordinates 
 	homoManager.findSeveralHomo(m_homoNum, matched1, matched2);
 
+	//remove all wrong homos
 	homoManager.removeWrongHomo();
 
-	//homos map target image to src, нужно найти координаты точек в которые бы отображалась наш блоб из таргет, а потом взять эти точки
-	//homoManager.setTransformedTgtImgs(imTgt, sizeTgt);
+	std::vector<cv::Mat> homoSet = homoManager.getHomoSet();
+	if(homoSet.size()==0)
+		return imTgt;
+
+	//homos map src image to target coordinates,
 	homoManager.setTransformedSrcImgs(imSrc, cv::Size(imTgt.cols + imSrc.cols, imTgt.rows));
 
-	std::vector<cv::Mat> homoSet = homoManager.getHomoSet();
-	std::vector<cv::Mat> invHomoSet = homoManager.getInvHomoSet();
-	//std::vector<cv::Mat> transformedTgtImgs = homoManager.getTransformedTgtImgs();	
-	std::vector<cv::Mat> transformedSrcImgs = homoManager.getTransformedSrcImgs();		
+	//get rects of objects on tranfrmed src image
+	std::vector<std::vector<cv::Vec4f> > srcRectPoints = homoManager.getSrcRects(datasSrc);
 
+	std::vector<cv::Mat> transformedSrcImgs = homoManager.getTransformedSrcImgs();	
+	cv::Vec3b newValue;	
+	cv::Mat mask, im_s;
+
+	cv::Mat result = imTgt.clone();
 	for(auto& data: datas)
 	{
-		cv::Mat mask(imTgt.rows, imTgt.cols, CV_8UC1, cv::Scalar(0));
-		cv::Mat mask2(imTgt.rows, imTgt.cols, CV_8UC3, cv::Scalar(0));
-		cv::Mat im_s = Mat::zeros( cv::Size(imSrc.cols, imSrc.rows), CV_8UC3 );
-
-		cv::Mat result = imTgt.clone();
-
+		if(!data.onBorder)
+			continue;
 		minimizer.optimize(transformedSrcImgs, imTgt, data, homoSet);
+
+		if(m_useGdf){
+			mask = Mat::zeros( cv::Size(imTgt.rows, imTgt.cols), CV_8UC1 );
+			im_s = Mat::zeros( cv::Size(imSrc.cols, imSrc.rows), CV_8UC3 );
+
+			//copy rect
+			cv::Rect re = boundingRect(data.maskPoints);
+			cv::Mat part = transformedSrcImgs[data.mainHomo](re);
+			cv::Mat roi1(im_s, re);
+    		part.copyTo(roi1);
+		}
 		for(int i = 0; i < data.points.size(); ++i)
 		{
 			int homoInd = data.homoIdxs[i];
-			cv::Vec3b newValue = getColor(transformedSrcImgs[homoInd], data.points[i], invHomoSet[homoInd]);
-			im_s.at<cv::Vec3b>(cv::Point(data.points[i].x, data.points[i].y)) = newValue;
+			if(m_useGdf)
+			{
+				newValue = getColor(transformedSrcImgs[homoInd], data.points[i]);
+				im_s.at<cv::Vec3f>(cv::Point(data.points[i].x, data.points[i].y)) = newValue;
+			}
 			
 			if(data.needTransforms[i])
 			{
+				//if copied pixel from the srcImage is a pixel of another person
+				for(int ds = 0; ds < datasSrc.size(); ++ds)
+				{
+					if( ((float)srcRectPoints[ds][homoInd][0] < data.points[i].x && data.points[i].x < (float)srcRectPoints[ds][homoInd][1]) 
+					  ||((float)srcRectPoints[ds][homoInd][2] < data.points[i].x && data.points[i].x < (float)srcRectPoints[ds][homoInd][3]) )
+					{
+						std::cout<<"Reconstruct failed"<<std::endl;
+						return imTgt;
+					}
+				}
+				//if we use gdf then newValue has already been found
+				if(!m_useGdf)
+					newValue = getColor(transformedSrcImgs[homoInd], data.points[i]);
 				result.at<cv::Vec3b>(cv::Point(data.points[i].x, data.points[i].y)) = newValue;
 			}
 		}
-		for(cv::Point2f& pt: data.maskPoints){
-			mask.at<int>(cv::Point(pt.x, pt.y)) = 1;
+		if(m_useGdf)
+			for(cv::Point2f& pt: data.maskPoints){
+				mask.at<int>(cv::Point(pt.x, pt.y)) = 1;
+			}
+
+		if(m_useGdf){
+			//run gradient domain fusion
+			cv::imshow("before gradient domain fusion", result);
+			gradientDomainFusion(data.maskPoints, mask, im_s, result, result);
 		}
-
-		//gradient domain fusion
-		cv::imshow("before", result);
-		gradientDomainFusion(data.maskPoints, mask, im_s, result, result);
-
-		cv::imshow("after", result);
+		cv::imshow("result", result);
+		return result;
 	}
+}*/
+
+cv::Mat Reconstructer::reconstructWithRemoval(cv::Mat imTgt, cv::Mat imSrc, cv::Size sizeTgt, 
+											  std::vector <DataForMinimizer>& datas, std::vector <DataForMinimizer>& datasSrc,
+											  std::vector<cv::KeyPoint>& matched1, std::vector<cv::KeyPoint>& matched2)
+{
+	//find several homographies which map source image to target coordinates 
+	homoManager.findSeveralHomo(m_homoNum, matched1, matched2);
+
+	//remove all wrong homos
+	homoManager.removeWrongHomo();
+
+	std::vector<cv::Mat> homoSet = homoManager.getHomoSet();
+	if(homoSet.size()==0)
+		return imTgt;
+
+	//homos map src image to target coordinates,
+	homoManager.setTransformedSrcImgs(imSrc, cv::Size(imTgt.cols + imSrc.cols, imTgt.rows));
+
+	//get rects of objects on tranfrmed src image
+	std::vector<std::vector<cv::Vec4f> > srcRectPoints = homoManager.getSrcRects(datasSrc);
+
+	std::vector<cv::Mat> transformedSrcImgs = homoManager.getTransformedSrcImgs();	
+	cv::Vec3b newValue;	
+	cv::Mat mask, im_s;
+
+	cv::Mat result = imTgt.clone();
+	for(auto& data: datas)
+	{
+		if(!data.onBorder)
+			continue;
+		minimizer.optimize(transformedSrcImgs, imTgt, data, homoSet);
+
+		if(m_useGdf){
+			mask = Mat::zeros( cv::Size(imTgt.rows, imTgt.cols), CV_8UC1 );
+			im_s = Mat::zeros( cv::Size(imSrc.cols, imSrc.rows), CV_8UC3 );
+
+			//copy rect
+			cv::Rect re = boundingRect(data.maskPoints);
+			cv::Mat part = transformedSrcImgs[data.mainHomo](re);
+			cv::Mat roi1(im_s, re);
+    		part.copyTo(roi1);
+		}
+		for(int i = 0; i < data.points.size(); ++i)
+		{
+			int homoInd = data.homoIdxs[i];
+			cv::Vec3b newValue = getColor(transformedSrcImgs[homoInd], data.points[i]);
+			if(m_useGdf)
+				im_s.at<cv::Vec3b>(cv::Point(data.points[i].x, data.points[i].y)) = newValue;
+			
+			if(data.needTransforms[i])
+			{
+				//if copied pixel from the srcImage is a pixel of another person
+				for(int ds = 0; ds < datasSrc.size(); ++ds)
+				{
+					if( ((float)srcRectPoints[ds][homoInd][0] < data.points[i].x && data.points[i].x < (float)srcRectPoints[ds][homoInd][1]) 
+					  ||((float)srcRectPoints[ds][homoInd][2] < data.points[i].x && data.points[i].x < (float)srcRectPoints[ds][homoInd][3]) )
+					{
+						std::cout<<"Reconstruct failed"<<std::endl;
+						return imTgt;
+					}
+				}
+				result.at<cv::Vec3b>(cv::Point(data.points[i].x, data.points[i].y)) = newValue;
+			}
+		}
+		if(m_useGdf)
+			for(cv::Point2f& pt: data.maskPoints){
+				mask.at<int>(cv::Point(pt.x, pt.y)) = 1;
+			}
+
+		if(m_useGdf){
+			//run gradient domain fusion
+			cv::imshow("before gradient domain fusion", result);
+			gradientDomainFusion(data.maskPoints, mask, im_s, result, result);
+		}
+		cv::imshow("result", result);
+		return result;
+	}
+}
+
+cv::Mat Reconstructer::reconstructWithAdding(const cv::Mat& homo, std::vector <DataForMinimizer>& datas, std::vector <DataForMinimizer>& datasTgt,
+							  				 const cv::Mat& imageTgt, const cv::Mat& imageSrc, const cv::Mat& res)
+{
+	if(homo.empty())
+		return imageTgt;
+	cv::Mat result = imageTgt.clone();
+
+	//cv::warpPerspective(imageTgt, transformedTgt, homo, cv::Size(imageTgt.cols + imageSrc.cols, imageSrc.rows), cv::WARP_INVERSE_MAP);
+	for(auto& data: datas)
+	{
+		if(!data.onBorder)
+			continue;
+		std::vector<cv::Point2f> pts;
+		cv::Vec3b newValue;	
+		std::cout<<data.points.size()<<std::endl;
+
+		cv::perspectiveTransform(data.points, pts, homo);
+		for(cv::Point2f& pt: pts)
+		{
+			for(DataForMinimizer& dataTgt: datasTgt)
+			{
+				//if pixel is a pixel of another person on tgtImage
+				if(dataTgt.rect.x  < pt.x && pt.x < dataTgt.rect.x + dataTgt.rect.width)
+				{
+					std::cout<<"Reconstruct failed"<<std::endl;
+					return imageTgt;
+				}
+			}
+			newValue = getColor(res, pt);
+			result.at<cv::Vec3b>(cv::Point(pt.x, pt.y)) = newValue;
+		}
+	}
+	return result;
 }

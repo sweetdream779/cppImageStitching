@@ -11,15 +11,22 @@ public:
     	homoManager = HomographyManager();
     	minimizer 	= GraphCutsMinimizer();
     }
+    Reconstructer(bool use_gdf, int homoNum): m_useGdf(use_gdf), m_homoNum(homoNum){ 
+    	homoManager = HomographyManager();
+    	minimizer 	= GraphCutsMinimizer();
+    }
 
-    void reconstruct(cv::Mat imTgt, cv::Mat imSrc, cv::Size size, cv::Size size2, std::vector <DataForMinimizer>& datas, std::vector<cv::KeyPoint>& matched1, std::vector<cv::KeyPoint>& matched2);
-
+    cv::Mat reconstructWithRemoval(cv::Mat imTgt, cv::Mat imSrc, cv::Size size, std::vector <DataForMinimizer>& datas, 
+    		std::vector <DataForMinimizer>& datasSrc, std::vector<cv::KeyPoint>& matched1, std::vector<cv::KeyPoint>& matched2);
+    cv::Mat reconstructWithAdding(const cv::Mat& homo, std::vector <DataForMinimizer>& datas, 
+    		std::vector <DataForMinimizer>& datasTgt, const cv::Mat& image1, const cv::Mat& image2, const cv::Mat& res);
     
 protected:
     HomographyManager homoManager;
     GraphCutsMinimizer minimizer;
 
-    int m_homoNum = 2;
+    int m_homoNum;
+    bool m_useGdf;
 
 };
 #endif // RECONSTRUCTER

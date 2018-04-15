@@ -130,3 +130,31 @@ void HomographyManager::setTransformedTgtImgs(const cv::Mat& imTgt, cv::Size siz
         cv::waitKey(0);
     }
 }
+
+std::vector<std::vector<cv::Vec4f> > HomographyManager::getSrcRects(std::vector<DataForMinimizer> datasSrc)
+{
+    std::vector<std::vector<cv::Vec4f> > out(datasSrc.size());
+
+    std::vector<cv::Point2f> pts_in(4);
+    std::vector<cv::Point2f> pts_out(4);
+    for(int i = 0; i < datasSrc.size(); ++i)
+    {
+        out[i].resize(m_homographySet.size());
+        pts_in[0] = cv::Point2f(datasSrc[i].rect.x, datasSrc[i].rect.y);//topLeft
+        pts_in[1] = cv::Point2f(datasSrc[i].rect.x + datasSrc[i].rect.width, datasSrc[i].rect.y); //topRight
+        pts_in[2] = cv::Point2f(datasSrc[i].rect.x + datasSrc[i].rect.width, datasSrc[i].rect.y + datasSrc[i].rect.height);//bottomRight
+        pts_in[3] = cv::Point2f(datasSrc[i].rect.x, datasSrc[i].rect.y + datasSrc[i].rect.height);//bottomLeft
+        for(int h = 0; h < m_homographySet.size(); ++h)
+        {        
+            cv::perspectiveTransform(pts_in, pts_out, m_homographySet[h]);
+            cv::Vec4f v(pts_out[0].x, pts_out[1].x, pts_out[3].x, pts_out[2].x);
+            out[i][h] = v;
+            //std::cout<<"Transformed rect: "<<(float)v[0]<<" "<<(float)v[1]<<" "<<(float)v[2]<<" "<<(float)v[3]<<std::endl;
+            //topLeft.x     = pts_out[0].x < pts_out[3].x ? pts_out[0].x : pts_out[3].x;
+            //bottomRight.x = pts_out[1].x > pts_out[2].x ? pts_out[1].x : pts_out[2].x;
+            //bottomRight.y = pts_out[2].y > pts_out[3].y ? pts_out[2].y : pts_out[3].y;
+            //topLeft.y     = pts_out[0].y < pts_out[1].y ? pts_out[0].y : pts_out[1].y;
+        }
+    }
+    return out;
+}

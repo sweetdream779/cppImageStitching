@@ -112,6 +112,7 @@ cv::Mat MyStitcher::stitch(const cv::Mat& img2, const cv::Mat& img1,
     std::vector<KeyPoint> outliers1, outliers2;
     homoManager.setMatchedPoints(matched1, matched2);
     cv::Mat homography = homoManager.findOneHomo(inliers1, inliers2, outliers1, outliers2);
+    m_mainHomo = homography;
 
     cv::Mat vis;
     cv::Mat imclone1 = image1.clone();
@@ -135,32 +136,43 @@ cv::Mat MyStitcher::stitch(const cv::Mat& img2, const cv::Mat& img1,
     //stitch
     cv::Mat res;
     cv::warpPerspective(image1, res, homography, cv::Size(image2.cols + image1.cols, image2.rows));
+    
+    //find y coordinate of the joint for image1
     std::vector<cv::Point2f> pts_in;
     pts_in.resize(1);
     std::vector<cv::Point2f> pts_out;
-
-    //fill left part of panorama
-    cv::Mat roi1(res, Rect(0, 0,  image2.cols, image2.rows));
-    image2.copyTo(roi1);
-
-    //find y coordinate of the joint for image1
     pts_in[0] = cv::Point2f(image2.cols, image2.rows/2);
     cv::perspectiveTransform(pts_in, pts_out, homoManager.getInvertedH());
     borderX = pts_out[0].x;
     std::cout<<pts_out[0].x<<std::endl;
 
+    return res;
+}
+
+
+cv::Mat MyStitcher::fill_and_crop(cv::Mat& res, const cv::Mat& image2, const cv::Mat& image1)
+{
+    if(m_mainHomo.empty())
+        return res;
+
+    std::vector<cv::Point2f> pts_in;
+    pts_in.resize(2);
+    std::vector<cv::Point2f> pts_out;
+    //fill left part of panorama
+    cv::Mat roi1(res, Rect(0, 0,  image2.cols, image2.rows));
+    image2.copyTo(roi1);
 
     //crop
     pts_in[0] = cv::Point2f(image1.cols,0);
-    cv::perspectiveTransform(pts_in, pts_out, homography);
-    std::cout<<pts_out[0].x<<" "<<pts_out[0].y<<std::endl;
+    pts_in[1] = cv::Point2f(image1.cols, image1.rows);
+    cv::perspectiveTransform(pts_in, pts_out, m_mainHomo);
 
-    cv::circle(res, pts_out[0], 3, cv::Scalar(0,0,255),3);
-    float newWidth  = pts_out[0].x;
+    float newWidth  = pts_out[0].x < pts_out[1].x ? pts_out[0].x : pts_out[1].x;
     float newHeight = image2.rows;
 
-    cv::Rect croppedroi(0,0,newWidth, newHeight);
-    //res = res(croppedroi);
+    cv::Rect croppedroi(0, 0, newWidth, newHeight);
+    res = res(croppedroi);
     
     return res;
+
 }
