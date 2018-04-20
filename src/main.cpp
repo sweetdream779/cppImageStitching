@@ -164,14 +164,16 @@ int FindBlobs(const cv::Mat &img, std::vector <DataForMinimizer>& datas, int bor
     return onBorder;
 }
 
-int main(int argc, char **argv){
-    bool use_gdf = true; //use gradient domain fusion in reconstruction or not
+cv::Mat resizeMask(const cv::Mat& im, cv::Size size)
+{
+    cv::Mat  img = im.clone();
+    cv::resize(img, img, size);
+    return img;
+}
 
-    Mat image1,image2,res,vis;
-
-	image1 = imread(argv[1], CV_LOAD_IMAGE_COLOR);
-    image2 = imread(argv[2], CV_LOAD_IMAGE_COLOR); 
-
+cv::Mat process(cv::Mat image1, cv::Mat image2, cv::Mat seg1, cv::Mat seg2, bool use_gdf)
+{
+    cv::Mat res, vis;
     image1 = resizeImg(image1);
     image2 = resizeImg(image2);
 
@@ -187,11 +189,8 @@ int main(int argc, char **argv){
     Ptr<BriefDescriptorExtractor> extractor = BriefDescriptorExtractor::create();
     Ptr<DescriptorMatcher> matcher = DescriptorMatcher::create("BruteForce-Hamming");
     
-    cv::Mat seg1 = cv::imread("/home/irina/Desktop/mask1.png", 0);
-    cv::Mat seg2 = cv::imread("/home/irina/Desktop/mask2.png", 0);
-
-    seg1 = resizeImg(seg1);
-    seg2 = resizeImg(seg2);
+    seg1 = resizeMask(seg1, image1.size());
+    seg2 = resizeMask(seg2, image2.size());
 
     int dilation_size = 3;
     cv::Mat element = getStructuringElement( cv::MORPH_RECT,
@@ -211,7 +210,7 @@ int main(int argc, char **argv){
     if(homo.empty())
     {
         std::cout<<"Stitching failed"<<std::endl;
-        return 0;
+        return res;
     }
     //find connected components on ipm
     std::vector <DataForMinimizer> data1;
@@ -238,9 +237,25 @@ int main(int argc, char **argv){
         std::cout<<"Second reconstruction"<<std::endl;
         image1 = reconstructer.reconstructWithAdding(homo, data2, data1, image1, image2, res);
     }
-    res = stitcher.fill_and_crop(res, image1, image2);           
+    res = stitcher.fill_and_crop(res, image1, image2);
+}
+
+int main(int argc, char **argv){
+    bool use_gdf = true; //use gradient domain fusion in reconstruction or not
+
+    Mat image1,image2,res;
+
+	image1 = imread(argv[1], CV_LOAD_IMAGE_COLOR);
+    image2 = imread(argv[2], CV_LOAD_IMAGE_COLOR); 
+
+    cv::Mat seg1 = cv::imread("/home/irina/Desktop/mask1_copy.png", 0);
+    cv::Mat seg2 = cv::imread("/home/irina/Desktop/mask1.png", 0);
+    
+    res = process(image1, image2, seg1, seg2, use_gdf);           
     cv::imshow( "Reconstructed", res);
 
     waitKey(0);
+    
+    std::cout<<"Finished\n";
     return 0;
 }

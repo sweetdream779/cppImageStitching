@@ -1,0 +1,6 @@
+/home/irina/Desktop/c++/stitching/CMakeFiles/edit_cache.dir
+/home/irina/Desktop/c++/stitching/CMakeFiles/rebuild_cache.dir
+/home/irina/Desktop/c++/stitching/src/CMakeFiles/rebuild_cache.dir
+/home/irina/Desktop/c++/stitching/src/CMakeFiles/edit_cache.dir
+/home/irina/Desktop/c++/stitching/src/CMakeFiles/main.dir
+/home/irina/Desktop/c++/stitching/src/CMakeFiles/blend.dir
