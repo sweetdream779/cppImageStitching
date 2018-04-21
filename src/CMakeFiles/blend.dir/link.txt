@@ -1,2 +1,0 @@
-/usr/bin/ar qc libblend.a  CMakeFiles/blend.dir/__/poison_im_editing_src/poisson_solver.cpp.o CMakeFiles/blend.dir/__/poison_im_editing_src/clone.cpp.o CMakeFiles/blend.dir/__/poison_im_editing_src/blend.cpp.o
-/usr/bin/ranlib libblend.a
