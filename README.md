@@ -1,4 +1,4 @@
-#Image Stitching library
+# Image Stitching library
 
 
-C++ library for TensorflowStitching Android studio application.
+C++ library for [Android studio application](https://github.com/sweetdream779/TensorflowStitching).
