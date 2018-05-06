@@ -220,17 +220,18 @@ cv::Mat Reconstructer::reconstructWithRemoval(cv::Mat imTgt, cv::Mat imSrc, cv::
 			//for(cv::Point2f& pt: data.maskPoints){
 				//mask.at<int>(cv::Point(pt.x, pt.y)) = 1;
 			//}
-
-		if(m_useGdf){
-			//run gradient domain fusion
-			cv::imshow("before gradient domain fusion", result);
-			//gradientDomainFusion(data.maskPoints, mask, im_s, result, result);
-			std::cout<<"Now run poison image edditing"<<std::endl;
-			blend::seamlessBlend(im_s, imTgt, mask, result);
-		}
-		cv::imshow("result", result);
-		return result;
 	}
+	if(m_useGdf){
+		cv::imshow("mask",mask);
+		cv::imshow("im_s",im_s);
+		//run gradient domain fusion
+		cv::imshow("before gradient domain fusion", result);
+		//gradientDomainFusion(data.maskPoints, mask, im_s, result, result);
+		std::cout<<"Now run poison image edditing"<<std::endl;
+		blend::seamlessBlend(im_s, imTgt, mask, result);
+	}
+	cv::imshow("result", result);
+	return result;
 }
 
 cv::Mat Reconstructer::reconstructWithAdding(const cv::Mat& homo, std::vector <DataForMinimizer>& datas, std::vector <DataForMinimizer>& datasTgt,

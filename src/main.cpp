@@ -76,6 +76,24 @@ std::vector<cv::Point2f> getBoundary(const cv::Mat& croppedimg, const cv::Rect& 
     return points;
 }
 
+void changeRect(cv::Rect& rect, const cv::Mat& img)
+{
+    if(rect.x - 1 > 0)
+    {
+        rect.x-=1;
+        rect.width+=1;
+    }
+    if(rect.y -1 > 0){
+        rect.y-=1;
+        rect.height +=1;
+    }
+    if(rect.x + rect.width + 1 < img.cols){
+        rect.width+=1;
+    }
+    if(rect.y + rect.height + 1 < img.rows)
+        rect.height+=1;
+}
+
 int FindBlobs(const cv::Mat &img, std::vector <DataForMinimizer>& datas, int borderX, bool use_gdf, bool rigth_im = false)
 {
     datas.clear();
@@ -101,6 +119,7 @@ int FindBlobs(const cv::Mat &img, std::vector <DataForMinimizer>& datas, int bor
 
             cv::Rect rect;
             cv::floodFill(label_image, cv::Point(x,y), label_count, &rect, 0, 0, 4);
+            changeRect(rect, img);
             DataForMinimizer data;
             data.onBorder = false;
             if(rect.x <= borderX && rect.x+rect.width >= borderX)
@@ -185,9 +204,11 @@ cv::Mat process(cv::Mat image1, cv::Mat image2, cv::Mat seg1, cv::Mat seg2, bool
     
     //Ptr<GFTTDetector> detector=GFTTDetector::create();
 
-    Ptr<SURF> detector = SURF::create( 400 );
-    Ptr<BriefDescriptorExtractor> extractor = BriefDescriptorExtractor::create();
-    Ptr<DescriptorMatcher> matcher = DescriptorMatcher::create("BruteForce-Hamming");
+    Ptr<SURF> detector = SURF::create();
+    //Ptr<BriefDescriptorExtractor> extractor = BriefDescriptorExtractor::create();
+    Ptr<SurfDescriptorExtractor> extractor = SurfDescriptorExtractor::create();
+    Ptr<DescriptorMatcher> matcher = DescriptorMatcher::create("FlannBased");
+    //Ptr<DescriptorMatcher> matcher = DescriptorMatcher::create("BruteForce-Hamming");
     
     seg1 = resizeMask(seg1, image1.size());
     seg2 = resizeMask(seg2, image2.size());
@@ -248,7 +269,7 @@ int main(int argc, char **argv){
 	image1 = imread(argv[1], CV_LOAD_IMAGE_COLOR);
     image2 = imread(argv[2], CV_LOAD_IMAGE_COLOR); 
 
-    cv::Mat seg1 = cv::imread("/home/irina/Desktop/mask1_copy.png", 0);
+    cv::Mat seg1 = cv::imread("/home/irina/Desktop/maskleft.png", 0);
     cv::Mat seg2 = cv::imread("/home/irina/Desktop/mask1.png", 0);
     
     res = process(image1, image2, seg1, seg2, use_gdf);           

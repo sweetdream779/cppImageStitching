@@ -34,12 +34,12 @@ void getDifferences(const cv::Mat& im1, const cv::Mat& im2){
 }
 
 
-void MyStitcher::detect_and_compute(const cv::Mat& frame, std::vector<cv::KeyPoint> *kp, cv::Mat* desc){
-    detector->detect(frame,*kp);
+void MyStitcher::detect_and_compute(const cv::Mat& frame, std::vector<cv::KeyPoint>& kp, cv::Mat& desc){
+    detector->detect(frame,kp);
 
-    if(!kp->empty())
-        extractor->compute(frame, *kp, *desc);
-    std::cout<<"kp: "<<kp->size()<<std::endl;
+    if(!kp.empty())
+        extractor->compute(frame, kp, desc);
+    std::cout<<"kp: "<<kp.size()<<std::endl;
 }
 
 cv::Mat resizeImg(const cv::Mat& im){
@@ -92,9 +92,10 @@ cv::Mat MyStitcher::stitch(const cv::Mat& img2, const cv::Mat& img1,
     double ratio;
     Rect2d rect_for_searching;
 
-    detect_and_compute(image1,&kp1,&desc1);
-    detect_and_compute(image2,&kp2,&desc2);
+    detect_and_compute(image1,kp1,desc1);
+    detect_and_compute(image2,kp2,desc2);
 
+    
     std::vector< vector<cv::DMatch> > matches;
     //std::vector<cv::KeyPoint> matched1, matched2;
     matcher->knnMatch(desc1, desc2, matches, 2); //дольше всех, другие матчинги????
@@ -106,6 +107,30 @@ cv::Mat MyStitcher::stitch(const cv::Mat& img2, const cv::Mat& img1,
             matched2.push_back(kp2[matches[i][0].trainIdx]);
         }
     }
+    
+    /*
+    std::vector< DMatch > matches;
+    matcher->match( desc1, desc2, matches );
+
+    double max_dist = 0;
+    double min_dist = 100;
+
+    for( int i = 0; i < desc1.rows; i++ ) {
+        double dist = matches[i].distance;
+        if( dist < min_dist ) {
+            min_dist = dist;
+        }
+        if( dist > max_dist ) {
+            max_dist = dist;
+        }
+    }
+
+    for( int i = 0; i < desc1.rows; i++ ) {
+        if( matches[ i ].distance < 4 * min_dist ) {
+            matched1.push_back(kp1[matches[i].queryIdx]);
+            matched2.push_back(kp2[matches[i].trainIdx]);
+        }
+    }*/
 
     //save visualzation of matches
     std::vector<KeyPoint> inliers1, inliers2;
