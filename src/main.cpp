@@ -228,6 +228,7 @@ cv::Mat process(cv::Mat image1, cv::Mat image2, cv::Mat seg1, cv::Mat seg2, bool
     MyStitcher stitcher(detector, matcher, extractor);
     res = stitcher.stitch(image1, image2, matched1, matched2, borderX2);
     cv::Mat homo = stitcher.getMainHomo();
+    cv::Mat invHomo = stitcher.getMainInvHomo();
     if(homo.empty())
     {
         std::cout<<"Stitching failed"<<std::endl;
@@ -239,7 +240,9 @@ cv::Mat process(cv::Mat image1, cv::Mat image2, cv::Mat seg1, cv::Mat seg2, bool
     std::cout<<"Blobs on joint from image1: "<<onBorder1<<" ,all: "<< data1.size()<<std::endl;
 
     std::vector <DataForMinimizer> data2;
-    int onBorder2 = FindBlobs(seg2, data2, borderX2, false, true);
+    cv::Mat transformedSeg2;
+    cv::warpPerspective(seg2, transformedSeg2, homo, cv::Size(image1.cols + image2.cols, image1.rows));
+    int onBorder2 = FindBlobs(transformedSeg2, data2, borderX1, false, true);
     std::cout<<"Blobs on joint from image2: "<<onBorder2<<" ,all: "<<data2.size()<<std::endl;
 
     int homoNum = 2;
@@ -256,7 +259,7 @@ cv::Mat process(cv::Mat image1, cv::Mat image2, cv::Mat seg1, cv::Mat seg2, bool
     if(onBorder2 > 0 && onBorder1 == 0)
     {
         std::cout<<"Second reconstruction"<<std::endl;
-        image1 = reconstructer.reconstructWithAdding(homo, data2, data1, image1, image2, res);
+        image1 = reconstructer.reconstructWithAdding(homo, invHomo, data2, data1, image1, image2, res, borderX1);
     }
     res = stitcher.fill_and_crop(res, image1, image2);
 }
@@ -269,10 +272,10 @@ int main(int argc, char **argv){
 	image1 = imread(argv[1], CV_LOAD_IMAGE_COLOR);
     image2 = imread(argv[2], CV_LOAD_IMAGE_COLOR); 
 
-    cv::Mat seg1 = cv::imread("/home/irina/Desktop/maskleft.png", 0);
-    cv::Mat seg2 = cv::imread("/home/irina/Desktop/mask1.png", 0);
+    cv::Mat seg1 = cv::imread("/home/irina/Desktop/mask1.png", 0);
+    cv::Mat seg2 = cv::imread("/home/irina/Desktop/mask2.png", 0);
     
-    res = process(image1, image2, seg1, seg2, use_gdf);           
+    res = process(image1, image2, seg1, seg2, use_gdf);        
     cv::imshow( "Reconstructed", res);
 
     waitKey(0);

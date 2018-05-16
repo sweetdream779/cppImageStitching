@@ -19,8 +19,8 @@ public:
 
     cv::Mat reconstructWithRemoval(cv::Mat imTgt, cv::Mat imSrc, cv::Size size, std::vector <DataForMinimizer>& datas, 
     		std::vector <DataForMinimizer>& datasSrc, std::vector<cv::KeyPoint>& matched1, std::vector<cv::KeyPoint>& matched2);
-    cv::Mat reconstructWithAdding(const cv::Mat& homo, std::vector <DataForMinimizer>& datas, 
-    		std::vector <DataForMinimizer>& datasTgt, const cv::Mat& image1, const cv::Mat& image2, const cv::Mat& res);
+    cv::Mat reconstructWithAdding(const cv::Mat& homo, const cv::Mat& invHomo, std::vector <DataForMinimizer>& datas, 
+    		std::vector <DataForMinimizer>& datasTgt, const cv::Mat& image1, const cv::Mat& image2, const cv::Mat& res, int borderX);
     
 protected:
     HomographyManager homoManager;

@@ -141,8 +141,8 @@ void GraphCutsMinimizer::optimize(std::vector<cv::Mat>& imsSrc, cv::Mat& imTgt, 
 	// smoothness and data costs are set up using arrays
 	GridGraph_DArraySArray(data, width, height, num_pixels, num_labels, data.homoIdxs);
 
-	/*std::cout<<"\nResult indexes: ";
+	std::cout<<"\nResult indexes: ";
 	for(auto id: data.homoIdxs)
 		std::cout<<id<<" ";
-	std::cout<<"\n";*/
+	std::cout<<"\n";
 }
