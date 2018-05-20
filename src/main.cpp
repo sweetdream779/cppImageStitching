@@ -190,7 +190,7 @@ cv::Mat resizeMask(const cv::Mat& im, cv::Size size)
     return img;
 }
 
-cv::Mat process(cv::Mat image1, cv::Mat image2, cv::Mat seg1, cv::Mat seg2, bool use_gdf)
+cv::Mat process(cv::Mat image1, cv::Mat image2, cv::Mat seg1, cv::Mat seg2, bool use_gdf, bool repairSeam)
 {
     cv::Mat res, vis;
     image1 = resizeImg(image1);
@@ -247,7 +247,7 @@ cv::Mat process(cv::Mat image1, cv::Mat image2, cv::Mat seg1, cv::Mat seg2, bool
 
     int homoNum = 2;
     Reconstructer reconstructer(use_gdf, homoNum); 
-
+    
     //remove blob
     if(onBorder1 > 0 && onBorder2 == 0)
     {
@@ -261,21 +261,24 @@ cv::Mat process(cv::Mat image1, cv::Mat image2, cv::Mat seg1, cv::Mat seg2, bool
         std::cout<<"Second reconstruction"<<std::endl;
         image1 = reconstructer.reconstructWithAdding(homo, invHomo, data2, data1, image1, image2, res, borderX1);
     }
+    if(repairSeam){}
     res = stitcher.fill_and_crop(res, image1, image2);
 }
 
 int main(int argc, char **argv){
     bool use_gdf = true; //use gradient domain fusion in reconstruction or not
+    bool repairSeam = true;
 
     Mat image1,image2,res;
 
 	image1 = imread(argv[1], CV_LOAD_IMAGE_COLOR);
     image2 = imread(argv[2], CV_LOAD_IMAGE_COLOR); 
 
-    cv::Mat seg1 = cv::imread("/home/irina/Desktop/mask1.png", 0);
-    cv::Mat seg2 = cv::imread("/home/irina/Desktop/mask2.png", 0);
+    cv::Mat seg1 = cv::imread("/home/irina/ICNet-tensorflow/output/left.png", 0);
+    cv::Mat seg2 = cv::imread("/home/irina/ICNet-tensorflow/output/right2.png", 0);
     
-    res = process(image1, image2, seg1, seg2, use_gdf);        
+    res = process(image1, image2, seg1, seg2, use_gdf, repairSeam); 
+    cv::imwrite("/home/irina/Desktop/diploma_result/removingResult3.jpg",res);     
     cv::imshow( "Reconstructed", res);
 
     waitKey(0);

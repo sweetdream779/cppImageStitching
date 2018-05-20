@@ -4,6 +4,7 @@
 #include "homographyManager.h"
 #include "graphCutsMinimizer.h"
 #include <blend/blend.h>
+#include <blend/clone.h>
 
 class Reconstructer
 {

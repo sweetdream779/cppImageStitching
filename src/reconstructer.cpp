@@ -229,11 +229,6 @@ cv::Mat Reconstructer::reconstructWithRemoval(cv::Mat imTgt, cv::Mat imSrc, cv::
 		//gradientDomainFusion(data.maskPoints, mask, im_s, result, result);
 		std::cout<<"Now run poison image edditing"<<std::endl;
 
-		std::cout<<"result: "<<result.cols<<" "<<result.rows<<std::endl;
-		std::cout<<"imTgt: "<<imTgt.cols<<" "<<imTgt.rows<<std::endl;
-		std::cout<<"mask: "<<mask.cols<<" "<<mask.rows<<std::endl;
-		std::cout<<"im_s: "<<im_s.cols<<" "<<im_s.rows<<std::endl;
-
 		blend::seamlessBlend(im_s, imTgt, mask, result);
 	}
 	cv::imshow("result", result);
@@ -283,7 +278,7 @@ cv::Mat Reconstructer::reconstructWithAdding(const cv::Mat& homo, const cv::Mat&
 		cv::Rect rect(0, 0, imageTgt.cols, imageTgt.rows);
 		cv::Mat croppedRes(res, rect);
 
-		blend::seamlessBlend(croppedRes, imageTgt, mask, result);
+		blend::seamlessBlend(croppedRes, result, mask, result);
 	}
 	cv::imshow("ress",result);
 	cv::waitKey(0);
